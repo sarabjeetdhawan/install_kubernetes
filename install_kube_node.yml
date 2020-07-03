@@ -1,0 +1,131 @@
+- hosts: node02
+  tasks:
+  - name: Disable SELINUX
+    selinux:
+      state: disabled
+
+#  - name: Disable Firewalld for Metallb to work
+#    service:
+#      name: firewalld
+#      state: stopped
+#      enabled: false
+
+  - name: edit line in /etc/sysctl.conf
+    lineinfile:
+      dest: /etc/sysctl.conf
+      state: present
+      line: 'net.bridge.bridge-nf-call-iptables = 1'
+
+  - name: Run modprobe br_netfilter
+    shell: /sbin/modprobe br_netfilter
+
+  - name: Run sysctl 
+    shell: /sbin/sysctl -p
+
+  - name: Enable Bridge call IPTables
+    shell: echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+  - name: Copying the Kubernetes repo
+    copy:
+      src: local_files/kubernetes.repo
+      dest: /etc/yum.repos.d/kubernetes.repo
+      owner: root
+      group: root
+
+  - name: Copying the docker-ce repo
+    copy:
+      src: local_files/docker-ce.repo
+      dest: /etc/yum.repos.d/docker-ce.repo
+      owner: root
+      group: root
+
+  - name: Enable Extra RPMs
+    shell: /sbin/subscription-manager repos --enable=rhel-7-server-extras-rpms
+
+  - name: Enable Extra RPMs
+    shell: /sbin/subscription-manager repos --enable=rhel-server-rhscl-7-rpms
+
+  - name: List the package and RUN this command manually on the Master server
+    shell: yum list installed kubeadm -y
+    failed_when: false
+    changed_when: false
+
+  - name: RUN THIS COMMAND ON THE NODE MANUALY - RIGHT NOW -  yum list installed kubeadm -y
+    pause:
+      minutes: 2
+
+  - name: Remove swapfile from /etc/fstab
+    mount:
+      name: swap
+      fstype: swap
+      state: absent
+
+  - name: Disable swap
+    command: swapoff -a
+    when: ansible_swaptotal_mb > 0
+
+  - name: Installing a list of packages - Wait for about 5 minutes..
+    yum:
+      name:
+        - kubeadm
+        - docker
+        - nfs-utils
+        - rpcbind
+        - source-to-image
+        - wget
+      state: present
+
+  - name: Restart Docker
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: docker
+
+  - name: Restart nfs-utils
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: nfs-utils
+
+       
+  - name: Copy the join command to server location
+    copy: src=local_files/join-command dest=/tmp/join-command.sh mode=0777
+
+  - name: Join the node to cluster
+    command: sh /tmp/join-command.sh
+
+  - name: Copy your redhat credentials in docker config (If applicable)
+    copy:
+      dest: "/var/lib/kubelet/.dockercfg"
+      content: |
+        {
+             "https://registry.redhat.io": {
+                     "auth": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                     "email": "sarabjeet@example.com"
+
+             }
+        }
+
+  - name: DO THIS NOW MANUALLY IF YOU PLAN TO MOUNT THE MASTER SERVER'S FILESYSTEM ON EACH NODE
+    debug:
+      msg:
+        - 'STEP1: mkdir /mnt/nfs '
+        - 'STEP2: Create below entry in /etc/fstab'
+        - 'MASTER_SERVER_NAME:/exports /mnt/nfs                   nfs     defaults 0 0'
+        - 'STEP3: Then issue this command'
+        - 'mount /mnt/nfs'
+
+  - name: Fix this issue  https://github.com/kubernetes/kubernetes/issues/56850
+    copy:
+      dest: "/etc/sysconfig/kubelet"
+      content: |
+        KUBELET_EXTRA_ARGS="--runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice"
+
+  - name: Restart Kubelet after fixing 
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: kubelet

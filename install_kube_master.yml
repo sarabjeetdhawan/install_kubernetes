@@ -1,0 +1,199 @@
+- hosts: master
+  tasks:
+  - name: Disable SELINUX
+    selinux:
+      state: disabled
+
+  - name: Disable Firewalld for Metallb to work
+    service:
+      name: firewalld
+      state: stopped
+      enabled: false
+
+  - name: edit line in /etc/sysctl.conf
+    lineinfile:
+      dest: /etc/sysctl.conf
+      state: present
+      line: 'net.bridge.bridge-nf-call-iptables = 1'
+
+  - name: Run modprobe br_netfilter
+    shell: /sbin/modprobe br_netfilter
+
+  - name: Run sysctl 
+    shell: /sbin/sysctl -p
+
+  - name: Enable Bridge call IPTables
+    shell: echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+  - name: Copying the Kubernetes repo
+    copy:
+      src: local_files/kubernetes.repo
+      dest: /etc/yum.repos.d/kubernetes.repo
+      owner: root
+      group: root
+
+  - name: Copying the docker-ce repo
+    copy:
+      src: local_files/docker-ce.repo
+      dest: /etc/yum.repos.d/docker-ce.repo
+      owner: root
+      group: root
+
+  - name: Enable Extra RPMs
+    shell: /sbin/subscription-manager repos --enable=rhel-7-server-extras-rpms
+
+  - name: Enable Extra RPMs
+    shell: /sbin/subscription-manager repos --enable=rhel-server-rhscl-7-rpms
+
+  - name: List the package and RUN this command manually on the Master server
+    shell: yum list installed kubeadm -y
+    failed_when: false
+    changed_when: false
+
+  - name: RUN THIS COMMAND ON THE SERVER MANUALY - RIGHT NOW -  yum list installed kubeadm -y
+    pause:
+      minutes: 2
+
+  - name: Remove swapfile from /etc/fstab
+    mount:
+      name: swap
+      fstype: swap
+      state: absent
+
+  - name: Disable swap
+    command: swapoff -a
+    when: ansible_swaptotal_mb > 0
+
+  - name: Install a list of packages
+    yum:
+      name:
+        - kubeadm
+        - docker
+        - nfs-utils
+        - rpcbind
+        - source-to-image
+        - wget
+      state: present
+
+  - name: Restart Docker
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: docker
+
+  - name: Create /exports directory if it does not exists
+    file:
+      path: /exports
+      state: directory
+      mode: '0755'
+
+  - name: Create NFS share entry in /etc/exports
+    copy:
+      dest: "/etc/exports"
+      content: |
+        /exports *(rw,no_root_squash,no_subtree_check)
+
+  - name: Restart nfs-utils
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: nfs-utils
+
+  - name: Restart nfs
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: nfs
+
+  - name: Running kubeadm init command
+    shell: /bin/kubeadm init --pod-network-cidr=10.244.0.0/16
+
+  - name: Create /root/.kube
+    file:
+      path: /root/.kube
+      state: directory
+      mode: '0755'
+
+  - name: Copy admin.conf file into root home directory for it to run kubectl 
+    shell: /bin/cp -i /etc/kubernetes/admin.conf /root/.kube/config
+
+  - name: Set permissions for /root/.kube/config
+    shell: chown 0:0 /root/.kube/config
+
+  - name: Now going to sleep for 2 minutes to make sure kubectl get pods --all-namespaces shows all running except coredns
+    pause:
+      minutes: 2
+
+  - name: Copying the kube-flannel.yml
+    copy:
+      src: local_files/kube-flannel.yml
+      dest: /root/kube-flannel.yml
+      owner: root
+      group: root
+
+  - name: Deploy POD Overlay Network
+    shell: kubectl apply -f /root/kube-flannel.yml
+
+  - name: Copy your redhat credentials in docker config (If Applicable)
+    copy:
+      dest: "/var/lib/kubelet/.dockercfg"
+      content: |
+        {
+             "https://registry.redhat.io": {
+                     "auth": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                     "email": "XYZ@example.com"
+
+             }
+        }
+
+  - name: Generate join command 
+    command: kubeadm token create --print-join-command
+    register: join_command
+
+  - name: Copy join command to local file local_files/join-command
+    local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="local_files/join-command"
+
+
+  - name: Fix this issue https://github.com/kubernetes/kubernetes/issues/56850
+    copy:
+      dest: "/etc/sysconfig/kubelet"
+      content: |
+        KUBELET_EXTRA_ARGS="--runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice"
+
+  - name: Restart Kubelet after fixing 
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: kubelet
+
+  - name: Now going to sleep for 1 minutes to make sure kubelet is back up and running 
+    pause:
+      minutes: 2
+
+  - name: Copying the metallb.yaml
+    copy:
+      src: local_files/metallb.yaml
+      dest: /root/metallb.yaml
+      owner: root
+      group: root
+
+  - name: Deploy POD Overlay Network
+    shell: kubectl apply -f /root/metallb.yaml
+
+  - name: Create random Kubernetes secret for the speakers for encrypted comm
+    shell: kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+
+  - name: Copying the my-layer2-config.yaml 
+    copy:
+      src: local_files/my-layer2-config.yaml
+      dest: /root/my-layer2-config.yaml
+      owner: root
+      group: root
+
+  - name: Apply the layer2 config file
+    shell: kubectl apply -f /root/my-layer2-config.yaml
+
