@@ -4,11 +4,11 @@
     selinux:
       state: disabled
 
-#  - name: Disable Firewalld for Metallb to work
-#    service:
-#      name: firewalld
-#      state: stopped
-#      enabled: false
+  - name: Disable Firewalld for Metallb to work
+    service:
+      name: firewalld
+      state: stopped
+      enabled: false
 
   - name: edit line in /etc/sysctl.conf
     lineinfile:
@@ -88,25 +88,12 @@
       daemon_reload: yes
       enabled: yes
       name: nfs-utils
-
        
   - name: Copy the join command to server location
     copy: src=local_files/join-command dest=/tmp/join-command.sh mode=0777
 
   - name: Join the node to cluster
     command: sh /tmp/join-command.sh
-
-  - name: Copy your redhat credentials in docker config (If applicable)
-    copy:
-      dest: "/var/lib/kubelet/.dockercfg"
-      content: |
-        {
-             "https://registry.redhat.io": {
-                     "auth": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-                     "email": "sarabjeet@example.com"
-
-             }
-        }
 
   - name: DO THIS NOW MANUALLY IF YOU PLAN TO MOUNT THE MASTER SERVER'S FILESYSTEM ON EACH NODE
     debug:
