@@ -1,10 +1,11 @@
-# install_kubernetes
+# install_kubernetes On-Premise with MetalLB
+
 Ansible Playbooks to install Kubernetes (Master and Nodes) ON-PREMISE with MetalLB
 
 These playbooks work on "On-Premise" RHEL 7.x. VMs.
 (Not tested on any other Linux flavor).
 
-****** Prerequisites ******
+##  Prerequisites
 
 Please make sure you modify below files accordingly:
 
@@ -27,7 +28,7 @@ and so on..
 
 3. If you are installing it on RHEL7.x server then make sure the RHEL is already subscribed or else comment out the RedHat subscription parts from the playbooks.
 
-****** Install Instructions ******
+## Install Instructions 
 
 Step1: Install kubernetes on the master server called "master":
 
