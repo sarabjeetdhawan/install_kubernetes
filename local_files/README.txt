@@ -13,7 +13,7 @@ https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
 
 
 #########################################################
-SOURCES:
+SOME OF THE SOURCES I USED:
 
 https://opensource.com/article/20/7/homelab-metallb?utm_campaign=intrel
 
