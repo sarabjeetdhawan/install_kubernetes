@@ -18,10 +18,10 @@ This IP range should be from the same Network as your Master/Nodes IP network.
 You may test it by issuing these command from where you will be running your ansible playbooks:
 
 ```
-$ ansible master --become -a "/usr/sbin/lvm lvs"
+$ ansible master --become -a "tail -1 /var/log/audit/audit.log"
 
-$ ansible node01 --become -a "/usr/sbin/lvm lvs"
-$ ansible node02 --become -a "/usr/sbin/lvm lvs"
+$ ansible node01 --become -a "tail -1 /var/log/audit/audit.log"
+$ ansible node02 --become -a "tail -1 /var/log/audit/audit.log"
 ```
 and so on...
 
