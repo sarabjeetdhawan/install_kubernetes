@@ -20,9 +20,9 @@ You may test it by issuing these command from where you will be running your ans
 
 
 ```
-$ ansible master --become -a "cat /etc/shadow"
-$ ansible node01 --become -a "cat /etc/shadow"
-$ ansible node02 --become -a "cat /etc/shadow"
+$ ansible master --become -a "/usr/sbin/lvm lvs"
+$ ansible node01 --become -a "/usr/sbin/lvm lvs"
+$ ansible node02 --become -a "/usr/sbin/lvm lvs"
 ```
 and so on..
 
