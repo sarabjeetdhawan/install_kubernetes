@@ -136,19 +136,7 @@
 
   - name: Deploy POD Overlay Network
     shell: kubectl apply -f /root/kube-flannel.yml
-
-  - name: Copy your redhat credentials in docker config (If Applicable)
-    copy:
-      dest: "/var/lib/kubelet/.dockercfg"
-      content: |
-        {
-             "https://registry.redhat.io": {
-                     "auth": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-                     "email": "XYZ@example.com"
-
-             }
-        }
-
+    
   - name: Generate join command 
     command: kubeadm token create --print-join-command
     register: join_command
