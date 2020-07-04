@@ -45,14 +45,10 @@
   - name: Enable Extra RPMs
     shell: /sbin/subscription-manager repos --enable=rhel-server-rhscl-7-rpms
 
-  - name: List the package and RUN this command manually on the Master server
+  - name: List the package to verify new repo
     shell: yum list installed kubeadm -y
     failed_when: false
     changed_when: false
-
-  - name: RUN THIS COMMAND ON THE NODE MANUALY - RIGHT NOW -  yum list installed kubeadm -y
-    pause:
-      minutes: 2
 
   - name: Remove swapfile from /etc/fstab
     mount:
@@ -71,7 +67,6 @@
         - docker
         - nfs-utils
         - rpcbind
-        - source-to-image
         - wget
       state: present
 
@@ -94,15 +89,6 @@
 
   - name: Join the node to cluster
     command: sh /tmp/join-command.sh
-
-  - name: DO THIS NOW MANUALLY IF YOU PLAN TO MOUNT THE MASTER SERVER'S FILESYSTEM ON EACH NODE
-    debug:
-      msg:
-        - 'STEP1: mkdir /mnt/nfs '
-        - 'STEP2: Create below entry in /etc/fstab'
-        - 'MASTER_SERVER_NAME:/exports /mnt/nfs                   nfs     defaults 0 0'
-        - 'STEP3: Then issue this command'
-        - 'mount /mnt/nfs'
 
   - name: Fix this issue  https://github.com/kubernetes/kubernetes/issues/56850
     copy:

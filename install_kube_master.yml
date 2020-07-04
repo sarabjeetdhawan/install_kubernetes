@@ -45,14 +45,10 @@
   - name: Enable Extra RPMs
     shell: /sbin/subscription-manager repos --enable=rhel-server-rhscl-7-rpms
 
-  - name: List the package and RUN this command manually on the Master server
+  - name: List the package to verify the new repo
     shell: yum list installed kubeadm -y
     failed_when: false
     changed_when: false
-
-  - name: RUN THIS COMMAND ON THE SERVER MANUALY - RIGHT NOW -  yum list installed kubeadm -y
-    pause:
-      minutes: 2
 
   - name: Remove swapfile from /etc/fstab
     mount:
@@ -71,7 +67,6 @@
         - docker
         - nfs-utils
         - rpcbind
-        - source-to-image
         - wget
       state: present
 
@@ -81,18 +76,6 @@
       daemon_reload: yes
       enabled: yes
       name: docker
-
-  - name: Create /exports directory if it does not exists
-    file:
-      path: /exports
-      state: directory
-      mode: '0755'
-
-  - name: Create NFS share entry in /etc/exports
-    copy:
-      dest: "/etc/exports"
-      content: |
-        /exports *(rw,no_root_squash,no_subtree_check)
 
   - name: Restart nfs-utils
     systemd:
