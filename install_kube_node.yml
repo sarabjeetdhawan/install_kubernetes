@@ -1,4 +1,4 @@
-- hosts: node02
+- hosts: all
   tasks:
   - name: Disable SELINUX
     selinux:
