@@ -160,7 +160,7 @@
 
   - name: Now going to sleep for 1 minutes to make sure kubelet is back up and running 
     pause:
-      minutes: 2
+      minutes: 1
 
   - name: Copying the metallb.yaml
     copy:
