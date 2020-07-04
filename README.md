@@ -24,7 +24,7 @@ $ ansible master --become -a "/usr/sbin/lvm lvs"
 $ ansible node01 --become -a "/usr/sbin/lvm lvs"
 $ ansible node02 --become -a "/usr/sbin/lvm lvs"
 ```
-and so on..
+and so on...
 
 3. If you are installing it on RHEL7.x server then make sure the RHEL is already subscribed or else comment out the RedHat subscription parts from the playbooks.
 
