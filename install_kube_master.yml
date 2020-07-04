@@ -1,4 +1,3 @@
-```
 - hosts: all
   tasks:
   - name: Disable SELINUX
@@ -185,4 +184,3 @@
 
   - name: Apply the layer2 config file
     shell: kubectl apply -f /root/my-layer2-config.yaml
-```
