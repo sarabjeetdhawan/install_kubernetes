@@ -45,7 +45,8 @@ ansible-playbook --become -i node02, install_kube_node.yml
 
 and so on..
 
-NOTE: During the execution, the playbook would pause for 2 minutes and require you to manually run this command on the Master and Node(s) as root.
+#### NOTE: During the execution, the playbook would pause for 2 minutes and require you to manually run this command on the Master and Node(s) as root.
 
-# yum list installed kubeadm -y
-
+```
+ yum list installed kubeadm -y
+```
