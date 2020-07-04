@@ -25,6 +25,7 @@ $ ansible node02 --become -a "cat /etc/shadow"
 ```
 and so on..
 
+3. If you are installing it on RHEL7.x server then make sure the RHEL is already subscribed or else comment out the RedHat subscription parts from the playbooks.
 
 ****** Install Instructions ******
 
